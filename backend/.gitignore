@@ -1,0 +1,31 @@
+# Environment files
+.env
+!.env.example
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache and build output
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+dist/
+build/
+*.egg-info/
+
+# Logs and local files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
