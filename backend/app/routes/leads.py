@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import PyMongoError
 
 from app.database import get_database
-from app.schemas.lead import LeadCreate, LeadResponse, LeadUpdate
+from app.schemas.lead import LeadCreate, LeadResponse, LeadStatus, LeadUpdate
 from app.services.lead_service import InvalidLeadIdError, LeadNotFoundError, LeadService
 
 
@@ -15,9 +15,20 @@ def get_lead_service(database: AsyncIOMotorDatabase = Depends(get_database)) -> 
 
 
 @router.get("", response_model=list[LeadResponse])
-async def get_leads(service: LeadService = Depends(get_lead_service)) -> list[LeadResponse]:
+async def get_leads(
+    status_filter: LeadStatus | None = Query(default=None, alias="status"),
+    search: str | None = Query(default=None, min_length=1),
+    overdue: bool | None = None,
+    today: bool | None = None,
+    service: LeadService = Depends(get_lead_service),
+) -> list[LeadResponse]:
     try:
-        return await service.list_leads()
+        return await service.list_leads(
+            status=status_filter,
+            search=search,
+            overdue=overdue,
+            today=today,
+        )
     except PyMongoError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
