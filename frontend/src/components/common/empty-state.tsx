@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Inbox } from "lucide-react";
+import { Inbox, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 
@@ -24,16 +24,22 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 px-6 py-12 text-center",
+        "flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed bg-card px-6 py-12 text-center shadow-sm",
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm">
-        <Icon className="size-5 text-muted-foreground" aria-hidden="true" />
+      <div className="relative flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="size-5" aria-hidden="true" />
+        <Sparkles
+          className="absolute -right-1 -top-1 size-3.5 text-primary/70"
+          aria-hidden="true"
+        />
       </div>
-      <h2 className="mt-4 text-base font-semibold">{title}</h2>
+      <h2 className="mt-4 text-base font-semibold text-balance">{title}</h2>
       {description ? (
-        <p className="mt-2 max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="mt-2 max-w-sm text-balance text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
       ) : null}
       {action ? (
         <Button className="mt-5" onClick={action.onClick}>

@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 172 66% 32%;
-    --primary-foreground: 180 100% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 42 88% 58%;
-    --accent-foreground: 24 9.8% 10%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 84% 56%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 32% 93%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 216 33% 94%;
+    --muted-foreground: 218 11% 45%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 172 66% 32%;
+    --border: 214 26% 88%;
+    --input: 214 26% 84%;
+    --ring: 222 84% 56%;
     --radius: 0.5rem;
   }
 
@@ -54,6 +54,7 @@
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   button,
@@ -62,4 +63,42 @@
   select {
     font: inherit;
   }
+
+  ::selection {
+    @apply bg-primary/15 text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-content-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.dialog-overlay[data-state="open"] {
+  animation: modal-overlay-in 160ms ease-out;
+}
+
+.dialog-content[data-state="open"] {
+  animation: modal-content-in 180ms ease-out;
 }

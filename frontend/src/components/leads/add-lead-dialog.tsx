@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,20 +46,30 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   const isSaving = createLead.isPending;
   const showNameError = touched.name && errors.name;
 
-  useEffect(() => {
-    if (!open) {
-      setForm(initialFormState);
-      setTouched({ name: false, company: false, phone: false });
-      reset();
-    }
-  }, [open, reset]);
-
   const updateField = (field: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const markTouched = (field: keyof FormState) => {
     setTouched((current) => ({ ...current, [field]: true }));
+  };
+
+  const resetForm = () => {
+    setForm(initialFormState);
+    setTouched({ name: false, company: false, phone: false });
+    reset();
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isSaving) {
+      return;
+    }
+
+    if (!nextOpen) {
+      resetForm();
+    }
+
+    onOpenChange(nextOpen);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -79,6 +89,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
     try {
       await createLead.mutateAsync(payload);
+      resetForm();
       onOpenChange(false);
     } catch {
       // Mutation-level error handling keeps the form open and shows feedback.
@@ -86,19 +97,16 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !isSaving && onOpenChange(nextOpen)}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto">
-        <DialogHeader>
-          <div className="mb-1 flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <UserPlus className="size-5" aria-hidden="true" />
-          </div>
-          <DialogTitle>Add lead</DialogTitle>
-          <DialogDescription>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto p-0 sm:max-w-md">
+        <DialogHeader className="border-b px-6 py-5">
+          <DialogTitle>Add New Lead</DialogTitle>
+          <DialogDescription className="sr-only">
             Create a new CRM lead with a default status of New.
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        <form className="space-y-5 px-6 pb-6 pt-1" onSubmit={handleSubmit} noValidate>
           <div className="grid gap-4">
             <Field
               id="lead-name"
@@ -114,7 +122,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 onChange={(event) => updateField("name", event.target.value)}
                 aria-invalid={Boolean(showNameError)}
                 aria-describedby={showNameError ? "lead-name-error" : undefined}
-                placeholder="Riya Sharma"
+                placeholder="e.g., John Doe"
                 disabled={isSaving}
               />
             </Field>
@@ -125,7 +133,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 value={form.company}
                 onBlur={() => markTouched("company")}
                 onChange={(event) => updateField("company", event.target.value)}
-                placeholder="Acme Growth"
+                placeholder="e.g., Stark Industries"
                 disabled={isSaving}
               />
             </Field>
@@ -136,7 +144,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 value={form.phone}
                 onBlur={() => markTouched("phone")}
                 onChange={(event) => updateField("phone", event.target.value)}
-                placeholder="+91 98765 43210"
+                placeholder="e.g., 555-0123"
                 disabled={isSaving}
               />
             </Field>
@@ -148,11 +156,11 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
             </p>
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter className="border-t pt-5">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
+              variant="ghost"
+              onClick={() => handleOpenChange(false)}
               disabled={isSaving}
             >
               Cancel

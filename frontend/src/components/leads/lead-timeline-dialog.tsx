@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent, ReactNode } from "react";
 import {
   CalendarClock,
@@ -54,7 +49,6 @@ export function LeadTimelineDialog({
   open,
   onOpenChange,
 }: LeadTimelineDialogProps) {
-  const [status, setStatus] = useState<LeadStatus>("new");
   const [note, setNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const [followUpTime, setFollowUpTime] = useState("");
@@ -79,32 +73,31 @@ export function LeadTimelineDialog({
   const canSubmit = note.trim().length > 0 && !isSavingNote && Boolean(lead);
 
   useEffect(() => {
-    if (lead) {
-      setStatus(lead.status);
-    }
-  }, [lead]);
-
-  useEffect(() => {
     if (open) {
       timelineRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [discussions.length, open]);
 
-  useEffect(() => {
-    if (!open) {
-      setNote("");
-      setFollowUpDate("");
-      setFollowUpTime("");
-      reset();
+  const resetDraft = () => {
+    setNote("");
+    setFollowUpDate("");
+    setFollowUpTime("");
+    reset();
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetDraft();
     }
-  }, [open, reset]);
+
+    onOpenChange(nextOpen);
+  };
 
   const handleStatusChange = (nextStatus: LeadStatus) => {
     if (!lead) {
       return;
     }
 
-    setStatus(nextStatus);
     updateLead.mutate({ id: lead.id, payload: { status: nextStatus } });
   };
 
@@ -138,15 +131,15 @@ export function LeadTimelineDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[min(860px,calc(100vh-2rem))] max-w-4xl grid-rows-none flex-col overflow-hidden p-0">
-        <DialogHeader className="sticky top-0 z-10 border-b bg-background px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="flex h-[100dvh] w-full max-w-none grid-rows-none flex-col overflow-hidden rounded-none p-0 sm:h-[min(760px,calc(100vh-2rem))] sm:w-[calc(100%-2rem)] sm:max-w-3xl sm:rounded-lg">
+        <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <DialogTitle className="truncate text-xl">
+              <DialogTitle className="truncate text-xl sm:text-2xl">
                 {lead?.name ?? "Lead timeline"}
               </DialogTitle>
-              <DialogDescription className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <DialogDescription className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                 <span>{lead?.company || "Unassigned account"}</span>
                 {lead?.phone ? (
                   <span className="inline-flex items-center gap-1">
@@ -159,8 +152,8 @@ export function LeadTimelineDialog({
 
             <div className="flex items-center gap-2">
               <select
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                value={status}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-all hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                value={lead?.status ?? "new"}
                 onChange={(event) =>
                   handleStatusChange(event.target.value as LeadStatus)
                 }
@@ -182,7 +175,7 @@ export function LeadTimelineDialog({
 
         <div
           ref={timelineRef}
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5"
         >
           {discussionsQuery.isLoading ? (
             <TimelineSkeleton />
@@ -205,7 +198,7 @@ export function LeadTimelineDialog({
         </div>
 
         <form
-          className="border-t bg-background px-5 py-4 sm:px-6"
+          className="border-t bg-background px-4 py-4 sm:px-5"
           onSubmit={(event) => void handleSubmit(event)}
         >
           <div className="grid gap-3">
@@ -233,7 +226,7 @@ export function LeadTimelineDialog({
                   disabled={isSavingNote || !lead}
                 />
               </Field>
-              <Button type="submit" disabled={!canSubmit}>
+              <Button className="sm:self-end" type="submit" disabled={!canSubmit}>
                 {isSavingNote ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
@@ -251,7 +244,7 @@ export function LeadTimelineDialog({
 
 function Timeline({ discussions }: { discussions: Discussion[] }) {
   return (
-    <div className="relative space-y-5 before:absolute before:left-5 before:top-3 before:h-full before:w-px before:bg-border">
+    <div className="relative space-y-5 before:absolute before:left-4 before:top-3 before:h-full before:w-px before:bg-border sm:before:left-5">
       {discussions.map((discussion) => (
         <TimelineItem key={discussion.id} discussion={discussion} />
       ))}
@@ -263,16 +256,16 @@ function TimelineItem({ discussion }: { discussion: Discussion }) {
   const { icon: Icon, label, tone } = getDiscussionMeta(discussion);
 
   return (
-    <article className="relative pl-14">
+    <article className="relative pl-11 sm:pl-14">
       <div
         className={cn(
-          "absolute left-0 top-1 flex size-10 items-center justify-center rounded-full border bg-background shadow-sm",
+          "absolute left-0 top-1 flex size-8 items-center justify-center rounded-full border bg-background shadow-sm sm:size-10",
           tone,
         )}
       >
         <Icon className="size-4" aria-hidden="true" />
       </div>
-      <div className="rounded-lg border bg-card p-4 shadow-sm">
+      <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{label}</span>
@@ -286,11 +279,11 @@ function TimelineItem({ discussion }: { discussion: Discussion }) {
             {formatRelativeTime(discussion.createdAt)}
           </span>
         </div>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-6">
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground/90">
           {discussion.content}
         </p>
         {discussion.followUpAt ? (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary">
             <CalendarClock className="size-3.5" aria-hidden="true" />
             Follow-up {formatDateTime(discussion.followUpAt)}
           </div>
