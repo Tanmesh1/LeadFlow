@@ -10,7 +10,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { EmptyState } from "@/components/common/empty-state";
+import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
 import { LeadCard } from "@/components/leads/lead-card";
+import { LeadTimelineDialog } from "@/components/leads/lead-timeline-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,6 +52,8 @@ const crmFilters: Array<{ label: string; value: FilterKey }> = [
 export function DashboardPage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   const filters = useMemo<LeadFilters>(
     () => ({
@@ -60,6 +64,9 @@ export function DashboardPage() {
 
   const leadsQuery = useLeads(filters);
   const leads = leadsQuery.data ?? [];
+  const selectedLead =
+    leads.find((lead) => lead.id === selectedLeadId) ??
+    (selectedLeadId ? null : null);
 
   const dashboardData = useMemo(() => {
     const matchesFilter = (lead: Lead) => {
@@ -154,7 +161,11 @@ export function DashboardPage() {
   }, [activeFilter, leads]);
 
   return (
-    <AppLayout searchValue={search} onSearchChange={setSearch}>
+    <AppLayout
+      searchValue={search}
+      onSearchChange={setSearch}
+      onAddLead={() => setIsAddLeadOpen(true)}
+    >
       <div className="space-y-6">
         <section>
           <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">
@@ -203,10 +214,21 @@ export function DashboardPage() {
               icon={section.icon}
               isLoading={leadsQuery.isLoading}
               error={leadsQuery.error}
+              onLeadClick={(lead) => setSelectedLeadId(lead.id)}
             />
           ))}
         </div>
       </div>
+      <AddLeadDialog open={isAddLeadOpen} onOpenChange={setIsAddLeadOpen} />
+      <LeadTimelineDialog
+        lead={selectedLead}
+        open={Boolean(selectedLeadId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedLeadId(null);
+          }
+        }}
+      />
     </AppLayout>
   );
 }
@@ -269,6 +291,7 @@ type LeadSectionProps = {
   icon: LucideIcon;
   isLoading: boolean;
   error: unknown;
+  onLeadClick: (lead: Lead) => void;
 };
 
 function LeadSection({
@@ -278,6 +301,7 @@ function LeadSection({
   icon: Icon,
   isLoading,
   error,
+  onLeadClick,
 }: LeadSectionProps) {
   return (
     <section className="space-y-4">
@@ -303,7 +327,7 @@ function LeadSection({
       ) : leads.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
+            <LeadCard key={lead.id} lead={lead} onClick={onLeadClick} />
           ))}
         </div>
       ) : (

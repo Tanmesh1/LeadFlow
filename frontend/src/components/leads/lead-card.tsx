@@ -13,15 +13,30 @@ import type { Lead } from "@/types/lead";
 
 type LeadCardProps = {
   lead: Lead;
+  onClick?: (lead: Lead) => void;
 };
 
-export function LeadCard({ lead }: LeadCardProps) {
+export function LeadCard({ lead, onClick }: LeadCardProps) {
   const activityAt = lead.lastDiscussionAt ?? lead.updatedAt ?? lead.createdAt;
 
   return (
     <Card
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={() => onClick?.(lead)}
+      onKeyDown={(event) => {
+        if (!onClick) {
+          return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick(lead);
+        }
+      }}
       className={cn(
         "h-full transition-colors",
+        onClick && "cursor-pointer hover:border-primary/50 hover:shadow-md",
         lead.isOverdue && "border-destructive/40 bg-destructive/5",
       )}
     >
