@@ -115,15 +115,19 @@ export function LeadTimelineDialog({
       return;
     }
 
-    await createDiscussion.mutateAsync({
-      content: note.trim(),
-      followUpAt: buildFollowUpAt(followUpDate, followUpTime),
-    });
+    try {
+      await createDiscussion.mutateAsync({
+        content: note.trim(),
+        followUpAt: buildFollowUpAt(followUpDate, followUpTime),
+      });
 
-    setNote("");
-    setFollowUpDate("");
-    setFollowUpTime("");
-    timelineRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      setNote("");
+      setFollowUpDate("");
+      setFollowUpTime("");
+      timelineRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      // Mutation-level error handling keeps the draft in place and shows feedback.
+    }
   };
 
   const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {

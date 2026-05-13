@@ -77,8 +77,12 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       status: "new",
     };
 
-    await createLead.mutateAsync(payload);
-    onOpenChange(false);
+    try {
+      await createLead.mutateAsync(payload);
+      onOpenChange(false);
+    } catch {
+      // Mutation-level error handling keeps the form open and shows feedback.
+    }
   };
 
   return (

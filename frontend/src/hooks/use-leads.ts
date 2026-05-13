@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryKey } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/api/client";
 import { createLead, getLeads, updateLead } from "@/api/leads";
+import { useToast } from "@/components/ui/toast";
 import type {
   Lead,
   LeadCreateInput,
@@ -22,6 +25,7 @@ export function useLeads(filters: LeadFilters = {}) {
 
 export function useCreateLead() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (payload: LeadCreateInput) => createLead(payload),
@@ -47,27 +51,65 @@ export function useCreateLead() {
         queryClient.setQueryData<Lead[]>(queryKey, [optimisticLead, ...currentLeads]);
       });
 
-      return { previousLists };
+      return { optimisticLead, previousLists };
+    },
+    onSuccess: (createdLead, _payload, context) => {
+      replaceLeadInCachedLists(
+        queryClient,
+        context?.previousLists,
+        (lead) => lead.id === context?.optimisticLead.id,
+        createdLead,
+      );
+      toast({ title: "Lead created", variant: "success" });
     },
     onError: (_error, _payload, context) => {
       context?.previousLists.forEach(([queryKey, leads]) => {
         queryClient.setQueryData(queryKey, leads);
       });
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: leadKeys.all });
+      toast({
+        title: "Unable to create lead",
+        description: getApiErrorMessage(_error),
+        variant: "error",
+      });
     },
   });
 }
 
 export function useUpdateLead() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: LeadUpdateInput }) =>
       updateLead(id, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: leadKeys.all });
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({ queryKey: leadKeys.all });
+
+      const previousLists = queryClient.getQueriesData<Lead[]>({
+        queryKey: leadKeys.lists(),
+      });
+
+      updateLeadInCachedLists(queryClient, id, (lead) => ({
+        ...lead,
+        ...payload,
+        updatedAt: new Date().toISOString(),
+      }));
+
+      return { previousLists };
+    },
+    onSuccess: (updatedLead) => {
+      updateLeadInCachedLists(queryClient, updatedLead.id, () => updatedLead);
+      toast({ title: "Lead updated", variant: "success" });
+    },
+    onError: (error, _variables, context) => {
+      context?.previousLists.forEach(([queryKey, leads]) => {
+        queryClient.setQueryData(queryKey, leads);
+      });
+      toast({
+        title: "Unable to update lead",
+        description: getApiErrorMessage(error),
+        variant: "error",
+      });
     },
   });
 }
@@ -93,7 +135,7 @@ function createOptimisticLead(payload: LeadCreateInput): Lead {
   };
 }
 
-function getFiltersFromLeadListKey(queryKey: readonly unknown[]) {
+export function getFiltersFromLeadListKey(queryKey: readonly unknown[]) {
   const maybeFilters = queryKey[2];
 
   if (!maybeFilters || typeof maybeFilters !== "object") {
@@ -103,7 +145,7 @@ function getFiltersFromLeadListKey(queryKey: readonly unknown[]) {
   return maybeFilters as LeadFilters;
 }
 
-function matchesLeadFilters(lead: Lead, filters: LeadFilters = {}) {
+export function matchesLeadFilters(lead: Lead, filters: LeadFilters = {}) {
   if (filters.status && lead.status !== filters.status) {
     return false;
   }
@@ -134,4 +176,47 @@ function matchesLeadFilters(lead: Lead, filters: LeadFilters = {}) {
   }
 
   return true;
+}
+
+export function updateLeadInCachedLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  leadId: string,
+  updater: (lead: Lead) => Lead,
+) {
+  queryClient
+    .getQueriesData<Lead[]>({ queryKey: leadKeys.lists() })
+    .forEach(([queryKey, leads]) => {
+      if (!leads) {
+        return;
+      }
+
+      const filters = getFiltersFromLeadListKey(queryKey);
+      const nextLeads = leads
+        .map((lead) => (lead.id === leadId ? updater(lead) : lead))
+        .filter((lead) => matchesLeadFilters(lead, filters));
+
+      queryClient.setQueryData(queryKey, nextLeads);
+    });
+}
+
+function replaceLeadInCachedLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  previousLists: Array<[QueryKey, Lead[] | undefined]> | undefined,
+  predicate: (lead: Lead) => boolean,
+  replacement: Lead,
+) {
+  previousLists?.forEach(([queryKey, leads]) => {
+    if (!leads) {
+      return;
+    }
+
+    const filters = getFiltersFromLeadListKey(queryKey);
+    const withoutOptimistic = leads.filter((lead) => !predicate(lead));
+    const shouldInclude = matchesLeadFilters(replacement, filters);
+
+    queryClient.setQueryData<Lead[]>(
+      queryKey,
+      shouldInclude ? [replacement, ...withoutOptimistic] : withoutOptimistic,
+    );
+  });
 }
